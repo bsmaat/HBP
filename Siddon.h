@@ -9,8 +9,9 @@ public:
 	Siddon();
 	Siddon(int, double);
 	//~Siddon();
-
 	vector<vector<double> > getIntersect(vector<double>&, vector<double>&);
+
+	//tuple<vector<vector<double> >, double> getIntersect(vector<double>&, vector<double>&);
 
 private:
 	int N;  // number of planes

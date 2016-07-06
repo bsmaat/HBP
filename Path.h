@@ -10,7 +10,7 @@ class Path {
 public:
     Path();
     Path(double&, double&, double&, double&);
-    Path(vector<double> & );
+    Path(vector<double> &, double & );
     vector<complex<double> > quadraticSolver(double & a, double & b, double & c);
     Vector4d CubicSpline();
     vector<vector<double> > ellipseIntersect(vector<double> & A, double & entryAngle, vector<double>& B, double& exitAngle, double& angle);

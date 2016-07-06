@@ -11,7 +11,6 @@ public:
     //void readCSV();
     void writeCSV(vector<vector<double > > & vec, const char* filename);
 
-
 private:
 
 };

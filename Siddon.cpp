@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <math.h>
+#include <tuple>
 
 Siddon::Siddon() {
 	d = 1;
@@ -21,33 +22,31 @@ Siddon::Siddon(int N, double d) {
 
 }
 
+//returns index intersection, path lengths, and needs to return angle of intersection?
+//tuple<vector<vector<double> >, double> Siddon::getIntersect(vector<double> & P0, vector<double> & P1) {
 vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double> & P1) {
+
     double& X1 = P0[0];
     double& X2 = P1[0];
     double& Y1 = P0[1];
     double& Y2 = P1[1];
 
+    double angleX;
+
+    angleX = std::atan2((Y2-Y1), (X2-X1));
+
     vector<double> ax, ay;
     if ( (X2-X1) != 0 ) {
-        //std::cout << X1 << " : " << X2 << std::endl;
         ax.resize(Xp.size());
         std::transform(Xp.begin(), Xp.end(), ax.begin(), bind2nd(std::plus<double>(), -X1));
         std::transform(ax.begin(), ax.end(), ax.begin(), bind1st(std::multiplies<double>(), 1.0/(X2-X1)));
     }
 
     if ( (Y2-Y1) != 0 ) {
-        //std::cout << Y1 << " : " << Y2 << std::endl;
-
         ay.resize(Yp.size());
         std::transform(Yp.begin(), Yp.end(), ay.begin(), bind2nd(std::plus<double>(), -Y1));
         std::transform(ay.begin(), ay.end(), ay.begin(), bind1st(std::multiplies<double>(), 1.0/(Y2-Y1)));
     }
-/*
-    if (ax.empty())
-        std::cout << "ax empty" << std::endl;
-    if (ay.empty())
-        std::cout << "ay empty" << std::endl;
-*/
 
 
     // calculate amin and amax
@@ -124,7 +123,6 @@ vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double>
     // calculate imin, imax, ax, jmin, jmax, ay
     double imin, imax;
     if (!ax.empty()) {
-        //sort(ax.begin(), ax.end());
         ax.erase(unique(ax.begin(), ax.end()), ax.end());
 
         if ((X2 - X1) >= 0) {
@@ -132,7 +130,6 @@ vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double>
             imax = 1 + (X1 + amax * (X2 - X1) - Xp[0])/d;
             imin = ceil(imin);
             imax = floor(imax);
-            //std::cout << imin << ", " << imax << ", " << amin << ", " << amax << std::endl;
             if (imin<=imax)
                 ax = std::vector<double>(ax.begin() + (int)imin-1, ax.begin()+(int)imax);
             else
@@ -147,7 +144,6 @@ vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double>
                 ax = std::vector<double>(ax.begin() + (int)imin-1, ax.begin() + (int)imax);
             else
                 ax.clear();
-            //std::reverse(ax.begin(), ax.end());
         }
     }
 
@@ -185,34 +181,15 @@ vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double>
     sort(a.begin(), a.end());
     a.erase(std::unique(a.begin(), a.end()), a.end());
 
-    /* debugging
-    std::cout << "imin: " << imin << ", imax: " << imax <<
-        ", amin: " << amin << ", amax: " << amax << std::endl;
-    std::cout << "jmin: " << jmin << ", jmax: " << jmax << std::endl;
-
-    std::cout << "ax" << std::endl;
-    writeVector(ax);
-    std::cout << "ay" << std::endl;
-    writeVector(ay);
-    std::cout << "a" << std::endl;
-    writeVector(a);
-    */
 
     double amid;
     int i, j;
     double pathLength;
     vector<vector<double> > indices;
     std::vector<double> v;
-    v.resize(3);
-    /*
-    cout << "ax: ";
-    writeVector(ax);
-    cout << "ay: ";
-    writeVector(ay);
-    cout << "a: ";
-    writeVector(a);
-    */
-    for(int m = 0; m<a.size()-1; m++) {
+    v.resize(4);
+
+    for(unsigned int m = 0; m<a.size()-1; m++) {
         amid = (a[m+1] + a[m])/2.0;
         // i = x position, j = y position
         i = floor( 1 + (X1 + amid*(X2-X1) - Xp[0])/d );
@@ -222,18 +199,14 @@ vector<vector<double> > Siddon::getIntersect(vector<double> & P0, vector<double>
             v[0] = j;
             v[1] = i;
             v[2] = pathLength;
+            v[3] = angleX;
             indices.push_back(v);
         }
     }
 
-/*
-    for (int m = 0; m<indices.size(); m++) {
-        writeVector(indices[m]);
-    }
-*/
 
+    //return make_tuple(indices, angleX);
     return indices;
-
 }
 
 void Siddon::writeVector(vector<double> vec) {

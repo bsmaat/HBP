@@ -35,8 +35,12 @@
 		<Unit filename="Backproject.cpp" />
 		<Unit filename="Backproject.h" />
 		<Unit filename="CSVRow.h" />
+		<Unit filename="Matrix.cpp" />
+		<Unit filename="Matrix.h" />
 		<Unit filename="Path.cpp" />
 		<Unit filename="Path.h" />
+		<Unit filename="ReadWrite.cpp" />
+		<Unit filename="ReadWrite.h" />
 		<Unit filename="Siddon.cpp" />
 		<Unit filename="Siddon.h" />
 		<Unit filename="main.cpp" />

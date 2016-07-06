@@ -14,10 +14,12 @@ public:
     void radon(vector<double> & data, vector<vector<double> > & bpAngle, vector<vector<double> > & chordLength, Siddon & s);
     void rotate(vector<double>&);
     vector<vector<double> > getYValues() { return yVal; };
+    void setAngle(double & angle);
 
 private:
     vector<vector<double> >* dataTmp;
     vector<vector<double> > yVal;
+    double angle;
 };
 
 #endif // BACKPROJECT_H_INCLUDED

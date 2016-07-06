@@ -14,7 +14,7 @@ Path::Path(double & entryPos, double & entryAngle, double & exitPos, double & ex
     this->exitAngle = exitAngle;
 }
 
-Path::Path(vector<double> & row) {
+Path::Path(vector<double> & row, double & angle) {
     this->entryPos = row[0];
     this->entryAngle = row[1];
     this->exitPos = row[2];
@@ -22,8 +22,7 @@ Path::Path(vector<double> & row) {
 
     // does this path intersect with ellipse?
     vector<double> A, B;
-    double angle = M_PI/4;
-    double angleTmp = 0;
+    //double angle = M_PI/4;
 
 
     A.push_back(-230);
@@ -39,8 +38,6 @@ Path::Path(vector<double> & row) {
     B.push_back(230 * sin(angle) + row[2] * cos(angle));
 */
 
-    double entryAngleNew = row[1] - angle;
-    double exitAngleNew = row[3] - angle;
 
     //cout << A[0] << ", " << A[1] << " : " << B[0] << ", " << B[1] << endl;
 
@@ -116,8 +113,6 @@ Vector4d Path::CubicSpline() {
     y(2) = dy0;
     y(3) = dy1;
 
-    //vector<double> coefficients(y.data(), y.data() + y.size());
-    //return coefficients;
 
     return y;
 }
