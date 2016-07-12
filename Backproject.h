@@ -3,7 +3,11 @@
 
 #include <vector>
 #include "Siddon.h"
+#include <Eigen/LU>
+#include <Eigen/Dense>
+#include <mutex>
 using namespace std;
+using namespace Eigen;
 
 class Backproject {
 
@@ -12,9 +16,15 @@ public:
     Backproject(vector<vector<double> > &data);
     Backproject(vector<double> & data);
     void radon(vector<double> & data, vector<vector<double> > & bpAngle, vector<vector<double> > & chordLength, Siddon & s);
+    void radon(vector<double> & data, vector<MatrixXd> & bpAngle, vector<MatrixXd> & chordLength, Siddon & s, mutex &);
+    void radonHBP(vector<double> & data, vector<MatrixXd> & bpAngle, vector<MatrixXd> & chordLength, Siddon & s, mutex & mut1);
+    //void radonBPF(vector<double> & data, Matrix2d & bpAngle, Matrix2d & chordLength, Siddon & s, mutex & mut1);
+
     void rotate(vector<double>&);
     vector<vector<double> > getYValues() { return yVal; };
     void setAngle(double & angle);
+
+    void radonBPF(vector<double> & data, MatrixXd & bpAngle, MatrixXd & chordLength, Siddon & s);
 
 private:
     vector<vector<double> >* dataTmp;

@@ -3,7 +3,9 @@
 #include "Path.h"
 #include "Siddon.h"
 #include <math.h>
+
 using namespace std;
+using namespace Eigen;
 
 Backproject::Backproject() {
 
@@ -22,6 +24,7 @@ void Backproject::setAngle(double & angle) {
 }
 
 // passing bpAngle and chordLength by reference to radon...
+// method takes bpAngle, chordLength as vectors
 void Backproject::radon(vector<double> & data, vector<vector<double> > & bpAngle, vector<vector<double> > & chordLength, Siddon & s) {
 
     // first compute the path
@@ -55,6 +58,121 @@ void Backproject::radon(vector<double> & data, vector<vector<double> > & bpAngle
     delete p;
 
 }
+
+// radon BPF
+void Backproject::radonBPF(vector<double> & data, MatrixXd & bpAngle, MatrixXd & chordLength, Siddon & s) {
+
+    // first compute the path
+    Path * p = new Path(data, angle);
+
+    vector<vector<double> > & path = p->getPath();
+    vector<vector<double> > indices;
+
+    indices = s.getIntersect(path[0], path[1]);
+
+    for (vector<vector<double> >::iterator i = ++path.begin(); i != --path.end(); ++i) {
+        yVal = (s.getIntersect(*i, *(i+1)));
+        indices.insert(indices.end(), yVal.begin(), yVal.end());
+    }
+
+    for (vector<vector<double> > ::const_iterator i = indices.begin(); i != indices.end(); ++i) {
+        bpAngle((*i)[0]-1,(*i)[1]-1) = (*i)[2] * data[4] + bpAngle((*i)[0]-1,(*i)[1]-1);
+        chordLength((*i)[0]-1,(*i)[1]-1) = chordLength((*i)[0]-1,(*i)[1]-1) + (*i)[2];
+    }
+
+    delete p;
+
+}
+// method takes bpAngle, chordLength as vector of matrices
+void Backproject::radon(vector<double> & data, vector<MatrixXd> & bpAngle, vector<MatrixXd> & chordLength, Siddon & s, mutex & mut1) {
+
+    // first compute the path
+    Path * p = new Path(data, angle);
+
+    vector<vector<double> > & path = p->getPath();
+    vector<vector<double> > indices;
+
+    indices = s.getIntersect(path[0], path[1]);
+    for (vector<vector<double> >::iterator i = ++path.begin(); i != --path.end(); ++i) {
+        yVal = (s.getIntersect(*i, *(i+1)));
+        indices.insert(indices.end(), yVal.begin(), yVal.end());
+    }
+
+
+    int angleXInd, tmpAng;
+    double angleX;
+    tmpAng = round(angle*180/M_PI);
+    for (vector<vector<double> > ::const_iterator i = indices.begin(); i != indices.end(); ++i) {
+        //bpAngle((*i)[0]-1,(*i)[1]-1) = (*i)[2] * data[4] + bpAngle((*i)[0]-1, (*i)[1]-1);
+        //chordLength((*i)[0]-1, (*i)[1] -1) = chordLength((*i)[0]-1, (*i)[1]-1) + (*i)[2];
+        //bpAngle(round((*i)[3]),(*i)[0]-1,(*i)[1]-1) = (*i)[2] * data[4] + bpAngle(round((*i)[3]), (*i)[0]-1, (*i)[1]-1);
+        angleXInd = round((*i)[3]*180/M_PI);
+        if (angleXInd < 0)
+            angleXInd = angleXInd + 180;
+        else if (angleXInd > 179)
+            angleXInd = angleXInd - 180;
+
+
+        mut1.lock();
+        /*
+            if (tmpAng != angleXInd) {
+                cout << tmpAng << " : " << angleXInd << ", " << (*i)[0] << " : " << (*i)[1] << endl;
+            }
+            */
+            bpAngle[angleXInd]((*i)[0]-1,(*i)[1]-1) = (*i)[2] * data[4] + bpAngle[angleXInd]((*i)[0]-1, (*i)[1]-1);
+            chordLength[angleXInd]((*i)[0]-1, (*i)[1] -1) = chordLength[angleXInd]((*i)[0]-1, (*i)[1]-1) + (*i)[2];
+
+        mut1.unlock();
+
+
+    }
+
+    delete p;
+
+}
+
+// HBP radon (weighted backprojections)
+void Backproject::radonHBP(vector<double> & data, vector<MatrixXd> & bpAngle, vector<MatrixXd> & chordLength, Siddon & s, mutex & mut1) {
+
+    //cout << "HEY" << endl;
+    // first compute the path
+    Path * p = new Path(data, angle);
+
+    vector<vector<double> > & path = p->getPath();
+    vector<vector<double> > indices;
+
+    indices = s.getIntersect(path[0], path[1]);
+    for (vector<vector<double> >::iterator i = ++path.begin(); i != --path.end(); ++i) {
+        yVal = (s.getIntersect(*i, *(i+1)));
+        indices.insert(indices.end(), yVal.begin(), yVal.end());
+    }
+
+
+    int angleXInd;
+    double angleX;
+
+    for (vector<vector<double> > ::const_iterator i = indices.begin(); i != indices.end(); ++i) {
+
+        angleXInd = round((*i)[3]*180/M_PI);
+        if (angleXInd < 0)
+            angleXInd = angleXInd + 180;
+        else if (angleXInd > 179)
+            angleXInd = angleXInd - 180;
+
+        angleX = angleXInd * M_PI/180.0; // nearest angle in radians
+
+        mut1.lock();
+            bpAngle[angleXInd]((*i)[0]-1,(*i)[1]-1) = (*i)[2] * data[4] + bpAngle[angleXInd]((*i)[0]-1, (*i)[1]-1);
+            chordLength[angleXInd]((*i)[0]-1, (*i)[1] -1) = chordLength[angleXInd]((*i)[0]-1, (*i)[1]-1) + (*i)[2];
+        mut1.unlock();
+
+
+    }
+
+    delete p;
+
+}
+
 
 Backproject::Backproject(vector<double> & data) {
 

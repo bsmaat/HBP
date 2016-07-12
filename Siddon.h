@@ -10,6 +10,8 @@ public:
 	Siddon(int, double);
 	//~Siddon();
 	vector<vector<double> > getIntersect(vector<double>&, vector<double>&);
+	vector<vector<double> > getIntersect2(vector<double>&, vector<double>&);
+
 
 	//tuple<vector<vector<double> >, double> getIntersect(vector<double>&, vector<double>&);
 

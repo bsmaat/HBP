@@ -16,7 +16,9 @@ public:
     vector<vector<double> > ellipseIntersect(vector<double> & A, double & entryAngle, vector<double>& B, double& exitAngle, double& angle);
     Vector4d CubicSpline(double & x0, double & x1, double & y0, double & y1, double & dy0, double & dy1);
     vector<vector<double> > CubicSplinePath(vector<double> & x, Vector4d & coeff, double & phi);
+    vector<vector<double> > mlp(vector<double> & x, Vector2d & y0, Vector2d & y1, vector<double> & coeff, double & phi);
     void testFn(double&);
+
 
     vector<vector<double> >& getPath() { return path; };
     void rotate(double&);

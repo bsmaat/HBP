@@ -61,7 +61,6 @@ Path::Path(vector<double> & row, double & angle) {
 
     // if path would intersect with ellipse, then find CubicSpline stuff
     if (!ellipseCoords.empty()) {
-        //cout << "HERE" << endl;
         Vector4d spline = CubicSpline(ellipseCoords[0][0], ellipseCoords[1][0], ellipseCoords[0][1], ellipseCoords[1][1], entrydydx, exitdydx);
         vector<double> u1;
 
@@ -83,6 +82,7 @@ Path::Path(vector<double> & row, double & angle) {
     point.push_back(+230 * cos(angle) - row[2] * sin(angle));
     point.push_back(+230 * sin(angle) + row[2] * cos(angle));
     path.push_back(point);
+
 
 }
 
@@ -159,13 +159,104 @@ vector<vector<double> > Path::CubicSplinePath(vector<double> & x, Vector4d & coe
         x[i] = xTmp * cos(phi) - yTmp * sin(phi);
         y = xTmp * sin(phi) + yTmp * cos(phi);
         coord.push_back(x[i]);
-
         coord.push_back(y);
         path.push_back(coord);
         coord.clear();
     }
 
     return path;
+}
+
+vector<vector<double> > Path::mlp(vector<double> & x, Vector2d & y0, Vector2d & y1, vector<double> & coeff, double & phi) {
+    vector<vector<double> > path;
+    vector<double> coord;
+    vector<double> a(6); // coefficient of polynomial for 1/beta^2 p^2
+    double X0 = 361; // radiation length, mm
+    double E0 = 1.36; // MeV/mm
+
+
+    auto fst = [&X0, &E0, &a](double & u1, double & u0) -> double {
+        double out = (pow(E0,2) * pow(1 + 0.038*log((u1 - u0)/X0),2)/X0) *
+        ( (1/1.0) * (pow(u1,2)*a[0]   ) * (u1 - u0)
+        + (1/2.0) * (pow(u1,2)*a[1] - 2*u1*a[0]) * (pow(u1,2) - pow(u0,2))
+        + (1/3.0) * (pow(u1,2)*a[2] - 2*u1*a[1] + a[0]) * (pow(u1,3) - pow(u0,3))
+        + (1/4.0) * (pow(u1,2)*a[3] - 2*u1*a[2] + a[1]) * (pow(u1,4) - pow(u0,4))
+        + (1/5.0) * (pow(u1,2)*a[4] - 2*u1*a[3] + a[2]) * (pow(u1,5) - pow(u0,5))
+        + (1/6.0) * (pow(u1,2)*a[5] - 2*u1*a[4] + a[3]) * (pow(u1,6) - pow(u0,6))
+        + (1/7.0) * ( - 2 * u1 * a[5] + a[4]) * (pow(u1,7) - pow(u0,7))
+        + (1/8.0) * (+ a[5]) * (pow(u1,8) - pow(u0,8)) ) ;
+        return out;
+    };
+
+    auto fsth = [&X0, &E0, &a](double & u1, double & u0) -> double {
+        double out = (pow(E0,2) * pow(1 + 0.038*log((u1-u0)/X0),2)/X0 ) *
+        ( a[0] * (u1-u0) + a[1] * (pow(u1,2) - pow(u0,2))/2.0 + a[2] * (pow(u1,3) - pow(u0,3))/3.0
+        + a[3] * (pow(u1,4) - pow(u0,4))/4.0 + a[4] * (pow(u1,5) - pow(u0,5))/5.0
+        + a[5] * (pow(u1,6) - pow(u0,6))/6.0 );
+        return out;
+    };
+
+    auto fstth = [&X0, &E0, &a](double & u1, double & u0) -> double {
+        double out = (pow(E0,2) * pow(1 + 0.038*log((u1 - u0)/X0),2)/X0) *
+        ( (1/1.0) * u1 * a[0] * (u1 - u0)
+        + (1/2.0) * (u1 * a[1] - a[0]) * (pow(u1,2) - pow(u0,2))
+        + (1/3.0) * (u1 * a[2] - a[1]) * (pow(u1,3) - pow(u0,3))
+        + (1/4.0) * (u1 * a[3] - a[2]) * (pow(u1,4) - pow(u0,4))
+        + (1/5.0) * (u1 * a[4] - a[3]) * (pow(u1,5) - pow(u0,5))
+        + (1/6.0) * (u1 * a[5] - a[4]) * (pow(u1,6) - pow(u0,6))
+        + (1/7.0) * (- a[5]) * (pow(u1,7) - pow(u0,7)) );
+        return out;
+    };
+
+    vector<Vector2d> ymlp(x.size());
+    ymlp[0] = y0;
+    ymlp.back() = y1;
+    double st1, sth1, stth1, st2, sth2, stth2;
+    double yTmp;
+    double xTmp;
+    Matrix2d SIG1, SIG2, R0, R1;
+    for(unsigned int i=1; i < x.size()-1; i++) {
+        st1 = fst(x[i], x[0]);
+        sth1 = fsth(x[i], x[0]);
+        stth1 = fstth(x[i], x[0]);
+
+        st2 = fst(x.back(), x[i]);
+        sth2 = fsth(x.back(), x[i]);
+        stth2 = fstth(x.back(), x[i]);
+
+        SIG1 << st1, stth1,
+                stth1, sth1;
+
+        SIG2 << st2, stth2,
+                stth2, sth2;
+
+        R0 << 1, x[i]-x[0],
+              0, 1;
+
+        R1 << 1, x.back() - x[i],
+              0, 1;
+
+        Matrix2d firstTerm;
+        Vector2d secondTerm, thirdTerm;
+        firstTerm = SIG1.inverse() + R1.transpose() * SIG2.inverse() * R1;
+        secondTerm = (SIG1.inverse() * R0) * y0;
+        thirdTerm = R1.transpose() * (SIG2.inverse() * y1);
+
+        ymlp[i] = firstTerm.inverse() * (secondTerm + thirdTerm);
+
+        xTmp = x[i];
+        yTmp = ymlp[i](0);
+        x[i] = xTmp * cos(phi) - yTmp * sin(phi);
+        ymlp[i](0) = xTmp * sin(phi) + yTmp * cos(phi);
+        coord.push_back(x[i]);
+        coord.push_back(ymlp[i](0));
+        path.push_back(coord);
+        coord.clear();
+    }
+
+    return path;
+
+
 }
 
 // check where the intersection with an ellipse occurs
